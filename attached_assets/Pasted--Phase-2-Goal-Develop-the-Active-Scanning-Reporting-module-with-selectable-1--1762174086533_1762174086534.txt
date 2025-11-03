@@ -1,0 +1,174 @@
+
+
+### **🎯 Phase 2 Goal**
+
+Develop the **Active Scanning & Reporting** module with selectable:
+
+1. **Scan Intensity:** `Stealth`, `Balanced`, `Aggressive`, `Insane`
+2. **Scan Authentication:** `Safe Scan`, `Deep Scan`
+
+Each option changes how Nmap/Scapy probes the network, allowing users to balance accuracy vs. network impact.
+
+---
+
+### **🧩 Functional Requirements**
+
+#### **1️⃣ Device Discovery & Scanning**
+
+* Detect live hosts on subnet (e.g. `192.168.1.0/24`).
+* Collect IP, MAC, hostname, OS, open ports, and service versions.
+* Allow user to choose **scan intensity** and **authentication depth** before each scan.
+
+#### **2️⃣ Scan Intensity Modes**
+
+| Mode           | Description                                        | Typical Nmap Flags            |
+| -------------- | -------------------------------------------------- | ----------------------------- |
+| **Stealth**    | Quick, low-noise scan that avoids firewall alerts. | `-sS -T1 --top-ports 50`      |
+| **Balanced**   | Default moderate scan (accurate + safe).           | `-sS -sV -T3 --top-ports 100` |
+| **Aggressive** | Fast and detailed scan with version detection.     | `-sS -sV -O -T4 -p-`          |
+| **Insane**     | Maximum speed and depth; may stress network.       | `-A -T5 --script vuln -p-`    |
+
+#### **3️⃣ Authentication Levels**
+
+| Mode          | Description                                              | Purpose                                            |
+| ------------- | -------------------------------------------------------- | -------------------------------------------------- |
+| **Safe Scan** | Non-intrusive enumeration; no login attempts.            | Avoid device crashes or DoS.                       |
+| **Deep Scan** | Authenticated check using stored credentials (SSH/HTTP). | Validate firmware and internal configs (optional). |
+
+> Deep Scan will use Python paramiko or requests for authenticated queries if credentials are configured.
+
+#### **4️⃣ CVE Lookup**
+
+* Query **NVD API** for detected OS/service versions.
+* Return CVE ID, description, severity, CVSS score.
+
+#### **5️⃣ Risk Scoring**
+
+```
+Risk Score = (Avg CVSS × 1.0) + (OpenPorts × 0.5) + IntensityWeight
+```
+
+Where IntensityWeight = { Stealth = 0.2, Balanced = 0.4, Aggressive = 0.6, Insane = 1.0 }
+Risk Level → Low / Moderate / High / Critical
+
+#### **6️⃣ Reporting & Dashboard**
+
+* Store results in **SQLite**.
+* Export CSV and HTML reports.
+* Dashboard shows:
+
+  * Active scans with intensity/auth mode.
+  * Per-device risk scores.
+  * CVE details and severity.
+
+---
+
+### **🧠 System Design**
+
+**Backend:** Python 3, Flask, python-nmap, Scapy, requests, sqlite3, pandas
+**Frontend:** HTML + Bootstrap + Jinja Templates
+**Hardware:** Raspberry Pi 4 or 3B+
+**Database:** SQLite (local storage)
+
+---
+
+### **📜 Building Queries / AI Code Instructions**
+
+---
+
+#### **Query 1 – Scanning Engine with Intensity and Auth Selection**
+
+> Create `active_scan/scanner.py` that:
+>
+> * Accepts `subnet`, `intensity`, and `auth_mode` as arguments.
+> * Maps intensity to Nmap flags (Table above).
+> * Runs Nmap scan via `subprocess` or `python-nmap`.
+> * If `auth_mode == "Deep Scan"`, use Paramiko (SSH) or Requests (HTTP) to gather extra info (e.g., firmware version).
+> * Parses results (IP, MAC, OS, open ports, service banners).
+> * Returns a list of device dicts with:
+>
+>   ```json
+>   {
+>     "ip": "192.168.1.10",
+>     "mac": "B8:27:EB:xx:xx:xx",
+>     "os": "Linux 4.x",
+>     "intensity": "Aggressive",
+>     "auth_mode": "Safe Scan",
+>     "ports": [{"22": "ssh"}, {"80": "http"}]
+>   }
+>   ```
+
+---
+
+#### **Query 2 – CVE Lookup Module**
+
+> Create `active_scan/cve_lookup.py` to:
+>
+> * Query the **NVD API** based on OS/service keywords.
+> * Cache responses to avoid rate limits.
+> * Return list of CVE entries with ID, description, CVSS, severity.
+
+---
+
+#### **Query 3 – Risk Analysis and Storage**
+
+> Create `analyze_and_store.py` to:
+>
+> * Combine scan results + CVE data.
+> * Compute risk score using formula above.
+> * Store into SQLite tables `devices` and `vulnerabilities`.
+
+---
+
+#### **Query 4 – Flask Dashboard with Scan Options**
+
+> Build `web_ui/app.py` to:
+>
+> * `/` → Home page with a form:
+>
+>   * Subnet input field.
+>   * Dropdown for Scan Intensity (4 options).
+>   * Dropdown for Auth Mode (2 options).
+>   * “Start Scan” button.
+> * `/scan` → Triggers scan based on form choices, stores results, redirects to `/reports`.
+> * `/reports` → Shows table of devices with:
+>
+>   * IP, OS, risk level, intensity, auth mode, CVE count.
+>   * “View Details” to expand vulnerability list.
+> * Include “Download CSV” button.
+> * Use Bootstrap cards or tables for UI clarity.
+
+---
+
+#### **Query 5 – Report Exporter**
+
+> Write `reporting/export_report.py` to:
+>
+> * Convert SQLite records to Pandas DataFrame.
+> * Save CSV → `/reports/scan_<timestamp>.csv`.
+> * Save HTML → Bootstrap-styled `/templates/report_<timestamp>.html`.
+> * Include columns: `Device IP | OS | Open Ports | Risk | Intensity | Auth Mode | CVE_Count`.
+
+---
+
+#### **Query 6 – Integration and Testing**
+
+> Integrate all modules into a cohesive pipeline:
+>
+> * Start Flask UI → choose Intensity/Auth → launch scan.
+> * Verify Nmap commands change based on mode.
+> * Validate CVE results and risk scoring.
+> * Confirm report generation and download work properly.
+> * Test Stealth vs. Insane modes to measure network impact.
+
+---
+
+### **✅ Expected Deliverables After Phase 2**
+
+* Multi-mode active scanner (4 intensities + 2 auth modes).
+* CVE lookup integration.
+* Risk classification engine.
+* SQLite database with device & vulnerability records.
+* Flask dashboard for scans and reports.
+* CSV/HTML report export.
+

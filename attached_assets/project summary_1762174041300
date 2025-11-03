@@ -1,0 +1,266 @@
+
+# 🧠 **Project Title:**
+
+### **PiSafe – IoT Security Gateway**
+
+---
+
+## 📘 **Full Project Description**
+
+### **Overview**
+
+**PiSafe** is an **AI-driven IoT Security Appliance** designed to secure home and small-office networks using a **Raspberry Pi**.
+It continuously monitors, analyzes, and protects IoT devices connected to the local LAN — **detecting vulnerabilities**, **identifying abnormal activity**, and **mitigating threats autonomously**.
+
+The system functions as a **local, privacy-respecting, all-in-one security gateway** that integrates **active vulnerability scanning**, **passive real-time monitoring**, **machine learning-based anomaly detection**, and **agentic AI remediation** — all hosted on a compact Raspberry Pi 4.
+
+---
+
+## 🧩 **System Objectives**
+
+1. **Actively discover and assess IoT devices** for vulnerabilities, open ports, and outdated firmware.
+2. **Continuously monitor** live traffic using packet capture and ML-based anomaly detection.
+3. **Automate threat response** using firewall rule updates and AI-driven patching.
+4. **Visualize network health** and risk levels through a **Flask-based web dashboard**.
+5. **Operate fully offline**, ensuring privacy and autonomy without cloud dependencies.
+
+---
+
+## ⚙️ **Technical Architecture**
+
+| Component                 | Description                                                                      | Tools & Libraries                             |
+| ------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------- |
+| **Hardware**              | Raspberry Pi 4 (or 3B+) as a low-cost network security appliance.                | Raspberry Pi OS (Lite)                        |
+| **Active Scanning**       | Performs vulnerability scanning of LAN devices to detect OS, services, and CVEs. | Nmap, Scapy, python-nmap                      |
+| **Passive Monitoring**    | Captures live traffic and extracts features for ML-based anomaly detection.      | Scapy, PyShark, tcpdump                       |
+| **ML Model (IDS)**        | Learns normal device behavior; flags abnormal patterns.                          | scikit-learn, Isolation Forest, One-Class SVM |
+| **Database**              | Stores device profiles, scan results, CVEs, and anomaly logs.                    | SQLite3                                       |
+| **Web Server**            | Provides user interface to control scans, view reports, and alerts.              | Flask, Bootstrap, Jinja                       |
+| **Firewall Control**      | Automates blocking of suspicious devices.                                        | iptables / nftables                           |
+| **Automated Remediation** | Agentic AI logic to fetch patches and auto-update firmware.                      | Python + vendor API integrations              |
+
+---
+
+## 🚦 **Core Functional Modules**
+
+### **1️⃣ Active Scanning & Vulnerability Analysis**
+
+PiSentinel’s active scanner probes all IoT endpoints to identify weaknesses.
+
+**Features:**
+
+* **Host Discovery:** Detects live devices on subnet (ARP/Nmap ping sweep).
+* **Port & Service Detection:** Lists open ports and fingerprints running services.
+* **OS & Firmware Identification:** Uses Nmap fingerprinting (`-O`, `-sV`).
+* **CVE Integration:** Matches detected versions with NIST/NVD CVE database.
+* **Risk Scoring:** Calculates network risk based on:
+
+  ```
+  Risk = (Avg CVSS × 1.0) + (OpenPorts × 0.5) + IntensityWeight
+  ```
+* **Reporting:** Generates CSV and HTML vulnerability reports with severity ratings.
+
+#### 🔹 Scan Intensity Modes
+
+| Mode           | Description                                   | Nmap Flags                    |
+| -------------- | --------------------------------------------- | ----------------------------- |
+| **Stealth**    | Minimal noise; low footprint scan.            | `-sS -T1 --top-ports 50`      |
+| **Balanced**   | Default balanced scan (safe + thorough).      | `-sS -sV -T3 --top-ports 100` |
+| **Aggressive** | Full port and version scan; faster execution. | `-sS -sV -O -T4 -p-`          |
+| **Insane**     | Deepest and fastest; may cause device stress. | `-A -T5 --script vuln -p-`    |
+
+#### 🔹 Scan Authentication Levels
+
+| Mode          | Description                                                                    |
+| ------------- | ------------------------------------------------------------------------------ |
+| **Safe Scan** | Non-intrusive enumeration — avoids login attempts.                             |
+| **Deep Scan** | Uses SSH/HTTP credentials (if configured) for deeper firmware & config checks. |
+
+**Output Example:**
+
+```json
+{
+  "ip": "192.168.1.10",
+  "mac": "B8:27:EB:12:34:56",
+  "os": "Linux 4.19",
+  "intensity": "Aggressive",
+  "auth_mode": "Safe Scan",
+  "ports": [{"22": "ssh"}, {"80": "http"}],
+  "cves": [{"CVE-2024-1234": "High"}, {"CVE-2023-5678": "Critical"}],
+  "risk_level": "High"
+}
+```
+
+---
+
+### **2️⃣ Passive Real-Time Monitoring & Anomaly Detection**
+
+When not actively scanning, PiSentinel performs **continuous passive traffic analysis** to detect intrusions or abnormal IoT behavior.
+
+**Pipeline:**
+
+1. **Packet Capture:**
+   Captures packets using Scapy or PyShark from LAN interface.
+   Extracts key metrics: packet count, protocol type, byte rate, destination domains.
+
+2. **Feature Extraction:**
+   Converts raw packets into numeric features using Pandas & NumPy.
+
+3. **Machine Learning Detection:**
+
+   * Trains **Isolation Forest / One-Class SVM** on normal traffic.
+   * Flags outliers as suspicious when deviation exceeds threshold.
+   * Supports model persistence with Joblib or ONNX.
+
+4. **Firewall Integration:**
+   On detecting a verified anomaly:
+
+   ```bash
+   sudo iptables -A INPUT -s <suspicious_IP> -j DROP
+   ```
+
+   Automatically isolates compromised IoT devices.
+
+5. **Alerting & Visualization:**
+
+   * Real-time anomaly feed in dashboard.
+   * Historical logs stored for trend analysis.
+   * Email or Telegram alerts (optional).
+
+---
+
+### **3️⃣ Web Dashboard (Flask-Based UI)**
+
+Provides an intuitive interface to manage the appliance.
+
+**Main Pages:**
+
+* **Home Page:** Overview of network and device count.
+* **Scan Control:** Choose subnet, scan intensity, and authentication level → start scan.
+* **Reports:** View previous scan results, device details, and CVE tables.
+* **Alerts:** Live display of anomalies and firewall actions.
+* **Downloads:** Export scan reports as CSV/HTML.
+
+**UI Technologies:** Flask + Jinja + Bootstrap + Chart.js
+**Optional Add-ons:** Grafana dashboard for professional visualization.
+
+---
+
+### **4️⃣ Agentic AI Remediation (Autonomous Patching)**
+
+* Detects outdated firmware or known CVEs.
+* Connects to vendor update servers (if supported).
+* Applies patches or firmware updates autonomously.
+* Logs patch actions for transparency and rollback safety.
+
+Example logic:
+
+```python
+if cve.severity == "Critical":
+    fetch_vendor_patch(device)
+    apply_patch(device)
+    mark_device_as_patched(device_id)
+```
+
+---
+
+### **5️⃣ Automated Mitigation & Firewall Response**
+
+* Integrates Linux **iptables** or **nftables** for instant containment.
+* Dynamically blocks compromised IoT devices at the gateway.
+* Admin can whitelist or manually unblock through dashboard.
+
+---
+
+## 🧠 **Machine Learning Model Overview**
+
+| Task                      | Model                         | Purpose                       |
+| ------------------------- | ----------------------------- | ----------------------------- |
+| Anomaly Detection         | Isolation Forest              | Detect unseen attack patterns |
+| Classification (optional) | Random Forest                 | Label common IoT attack types |
+| Data Normalization        | MinMaxScaler / StandardScaler | Clean feature inputs          |
+
+---
+
+## 📊 **Database Schema (SQLite)**
+
+**`devices` table**
+
+| Field      | Type         | Description         |
+| ---------- | ------------ | ------------------- |
+| id         | INTEGER (PK) | Unique ID           |
+| ip         | TEXT         | Device IP address   |
+| mac        | TEXT         | MAC address         |
+| os         | TEXT         | Detected OS         |
+| intensity  | TEXT         | Scan mode           |
+| auth_mode  | TEXT         | Authentication mode |
+| risk_level | TEXT         | Calculated risk     |
+| scan_time  | DATETIME     | Timestamp           |
+
+**`vulnerabilities` table**
+
+| Field       | Type         | Description             |
+| ----------- | ------------ | ----------------------- |
+| id          | INTEGER (PK) | Unique record           |
+| device_id   | INTEGER      | Linked to devices table |
+| cve_id      | TEXT         | CVE identifier          |
+| description | TEXT         | Short summary           |
+| severity    | TEXT         | Low/Med/High/Critical   |
+| score       | REAL         | CVSS score              |
+
+---
+
+## 🧮 **Development Phases (Condensed)**
+
+| Phase                  | Focus                       | Deliverables                                                    |
+| ---------------------- | --------------------------- | --------------------------------------------------------------- |
+| **Phase 1**            | Setup & Environment         | Pi configuration, Python environment, Flask skeleton            |
+| **Phase 2**            | Active Scanning & Reporting | Multi-intensity + Auth scanning, CVE lookup, reports, dashboard |
+| **Phase 3**            | Passive Monitoring          | Packet capture, ML anomaly detection, firewall integration      |
+| **Phase 4**            | Integration & Alerts        | Unified dashboard, email/Telegram notifications                 |
+| **Phase 5 (optional)** | AI Remediation              | Agentic AI patching automation                                  |
+
+---
+
+## ⚠️ **Challenges**
+
+* Handling diverse IoT device protocols and responses.
+* Avoiding overload during aggressive scans.
+* Balancing detection accuracy vs. false positives.
+* Ensuring reliable firmware patching across vendors.
+* Maintaining low CPU usage on Raspberry Pi.
+
+---
+
+## 💡 **Unique Selling Proposition (USP)**
+
+| Feature                     | Advantage                                                        |
+| --------------------------- | ---------------------------------------------------------------- |
+| **Hybrid Scanning Engine**  | Combines active (Nmap) + passive (ML IDS) defense                |
+| **Multi-Intensity Modes**   | Adjustable scanning aggressiveness per user/network sensitivity  |
+| **Safe vs Deep Auth Modes** | Provides both stealth enumeration and deep authenticated checks  |
+| **AI-Driven Patching**      | Self-healing “agentic” security with autonomous firmware updates |
+| **Offline & Private**       | Entirely local – no cloud dependency or data sharing             |
+| **Unified Dashboard**       | One-stop view for scanning, monitoring, and firewall actions     |
+
+---
+
+## 🔐 **Potential Patentable Innovations**
+
+1. Integration of randomized, intensity-based active scans with ML-informed passive monitoring.
+2. AI-driven self-healing through autonomous patching workflows (“agentic AI remediation”).
+3. On-device firewall rule generation triggered by real-time ML anomaly detection.
+4. Implementation on low-cost SBC (Raspberry Pi) for edge-level IoT network defense.
+
+---
+
+## 🧾 **Expected Deliverables**
+
+✅ Active scanner with selectable intensity & authentication
+✅ Vulnerability correlation with CVE/NVD
+✅ Passive ML anomaly detection
+✅ Automated isolation & alerting system
+✅ Flask dashboard with live insights
+✅ CSV/HTML report generation
+✅ Optional AI-based firmware patching
+
