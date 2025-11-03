@@ -93,11 +93,13 @@ Create a `.env` file in the project root:
 ```bash
 # Create .env file
 cat > .env << 'EOF'
-# Session secret for Flask (generate a random string)
+# Session secret for Flask (REQUIRED - generate a random string)
+# You can generate one with: python3 -c "import secrets; print(secrets.token_hex(32))"
 SESSION_SECRET=your-super-secret-key-change-this
 
-# NIST CVE API Key (optional but recommended)
-NIST_CVE_API_KEY=eb9e9d6e-9c0f-49f0-84d6-0a8c2d068503
+# NIST CVE API Key (optional but recommended for better rate limits)
+# Get your free API key at: https://nvd.nist.gov/developers/request-an-api-key
+NIST_CVE_API_KEY=your-nist-api-key-here
 
 # Database URL (uses SQLite by default)
 # For PostgreSQL: postgresql://user:password@localhost/pisafe
@@ -162,8 +164,8 @@ Type=simple
 User=your-username
 WorkingDirectory=/path/to/pisafe-security-gateway
 Environment="PATH=/home/your-username/.cargo/bin:/usr/bin"
-Environment="SESSION_SECRET=your-super-secret-key"
-Environment="NIST_CVE_API_KEY=eb9e9d6e-9c0f-49f0-84d6-0a8c2d068503"
+Environment="SESSION_SECRET=your-super-secret-key-change-this"
+Environment="NIST_CVE_API_KEY=your-nist-api-key-here"
 ExecStart=/home/your-username/.cargo/bin/uv run gunicorn --bind 0.0.0.0:5000 --workers 4 app:app
 Restart=always
 RestartSec=10

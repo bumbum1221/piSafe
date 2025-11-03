@@ -10,7 +10,9 @@ import os
 import re
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SESSION_SECRET', 'dev-secret-key-change-in-production')
+app.secret_key = os.environ.get('SESSION_SECRET')
+if not app.secret_key:
+    raise RuntimeError("SESSION_SECRET environment variable must be set")
 
 database.init_db()
 
