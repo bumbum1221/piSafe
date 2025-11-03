@@ -1,0 +1,90 @@
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.container {
+    flex: 1;
+}
+
+.footer {
+    margin-top: auto;
+}
+
+.brand-icon {
+    font-size: 1.5rem;
+}
+
+.card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1rem;
+}
+
+.card-header {
+    font-weight: 600;
+}
+
+.table-responsive {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.risk-critical {
+    background-color: #dc3545;
+    color: white;
+}
+
+.risk-high {
+    background-color: #fd7e14;
+    color: white;
+}
+
+.risk-moderate {
+    background-color: #ffc107;
+    color: black;
+}
+
+.risk-low {
+    background-color: #28a745;
+    color: white;
+}
+
+.badge {
+    font-size: 0.85rem;
+    padding: 0.35em 0.65em;
+}
+
+code {
+    background-color: #f4f4f4;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+.alert {
+    border-radius: 0.25rem;
+}
+
+.btn {
+    border-radius: 0.25rem;
+    transition: all 0.2s;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+h1, h2, h3, h4, h5 {
+    color: #333;
+}
+
+.lead {
+    color: #666;
+}
