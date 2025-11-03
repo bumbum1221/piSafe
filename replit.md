@@ -120,6 +120,10 @@ Risk Levels:
 None specified yet.
 
 ## Recent Changes
+- 2025-11-03 (Update 5): Additional UI refinements and documentation:
+  - Removed "System Requirement" section from UI for cleaner interface
+  - Created LOCAL_SETUP_GUIDE.md with comprehensive local setup instructions
+  - Clarified that this is a Python project (not Node.js/npm compatible)
 - 2025-11-03 (Update 4): Enhanced security and UI improvements:
   - Changed "Start Network Scan" to "Explicit Scanning" in UI
   - Converted scan intensity from radio buttons to dropdown menu for better UX
