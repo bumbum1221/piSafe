@@ -40,8 +40,14 @@ def search_cves(keyword):
         'resultsPerPage': 10
     }
     
+    headers = {}
+    api_key = os.environ.get('NIST_CVE_API_KEY')
+    if api_key:
+        headers['apiKey'] = api_key
+        print(f"Using NIST API key for enhanced access")
+    
     try:
-        response = requests.get(url, params=params, timeout=10)
+        response = requests.get(url, params=params, headers=headers, timeout=10)
         
         if response.status_code == 200:
             data = response.json()
@@ -101,6 +107,37 @@ def lookup_cves_for_device(device_info):
             if len(keyword) > 3:
                 cves = search_cves(keyword)
                 all_cves.extend(cves)
+    
+    if 'deep_scan_results' in device_info:
+        deep_scan = device_info['deep_scan_results']
+        
+        if deep_scan.get('ssh_results'):
+            ssh_results = deep_scan['ssh_results']
+            
+            if ssh_results.get('firmware_info'):
+                firmware_info = ssh_results['firmware_info']
+                print(f"Analyzing firmware: {firmware_info[:100]}")
+                
+                firmware_keywords = firmware_info.split()[:5]
+                for keyword in firmware_keywords:
+                    if len(keyword) > 3 and not keyword.isdigit():
+                        cves = search_cves(keyword)
+                        all_cves.extend(cves)
+            
+            if ssh_results.get('system_info'):
+                system_keywords = ssh_results['system_info'].split()[:4]
+                for keyword in system_keywords:
+                    if len(keyword) > 3 and not keyword.isdigit():
+                        cves = search_cves(keyword)
+                        all_cves.extend(cves)
+        
+        if deep_scan.get('additional_info', {}).get('firmware'):
+            additional_firmware = deep_scan['additional_info']['firmware']
+            firmware_keywords = additional_firmware.split()[:5]
+            for keyword in firmware_keywords:
+                if len(keyword) > 3 and not keyword.isdigit():
+                    cves = search_cves(keyword)
+                    all_cves.extend(cves)
     
     for port_info in device_info.get('ports', []):
         product = port_info.get('product', '')
