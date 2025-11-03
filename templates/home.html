@@ -5,25 +5,49 @@
 {% block content %}
 <div class="row">
     <div class="col-md-12">
-        <h1 class="mb-4">PiSafe - IoT Security Gateway</h1>
-        <p class="lead">Active vulnerability scanning with multi-intensity modes and CVE detection</p>
+        <div class="hero-section">
+            <h1 class="display-4 mb-3">
+                <span class="hero-icon">🛡️</span> PiSafe Security Gateway
+            </h1>
+            <p class="lead text-muted">Automated IoT vulnerability scanning with real-time network analysis</p>
+        </div>
     </div>
 </div>
 
 <div class="row mb-4">
-    <div class="col-md-6">
-        <div class="card text-white bg-primary">
-            <div class="card-body">
-                <h5 class="card-title">Total Devices Scanned</h5>
-                <h2 class="card-text">{{ device_count }}</h2>
+    <div class="col-md-3">
+        <div class="stat-card bg-gradient-primary">
+            <div class="stat-icon">📡</div>
+            <div class="stat-content">
+                <h3>{{ device_count }}</h3>
+                <p>Devices Scanned</p>
             </div>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="card text-white bg-danger">
-            <div class="card-body">
-                <h5 class="card-title">High Risk Devices</h5>
-                <h2 class="card-text">{{ high_risk_count }}</h2>
+    <div class="col-md-3">
+        <div class="stat-card bg-gradient-danger">
+            <div class="stat-icon">⚠️</div>
+            <div class="stat-content">
+                <h3>{{ high_risk_count }}</h3>
+                <p>High Risk Devices</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-gradient-success">
+            <div class="stat-icon">🌐</div>
+            <div class="stat-content">
+                <h3>{{ network_info.ip }}</h3>
+                <p>Your IP Address</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-gradient-info">
+            <div class="stat-icon">🔍</div>
+            <div class="stat-content">
+                <h3>{{ network_info.subnet }}</h3>
+                <p>Detected Network</p>
             </div>
         </div>
     </div>
@@ -31,46 +55,76 @@
 
 <div class="row">
     <div class="col-md-12">
-        <div class="card">
-            <div class="card-header bg-dark text-white">
-                <h5 class="mb-0">Start Network Scan</h5>
+        <div class="scan-card">
+            <div class="card-header-modern">
+                <h4 class="mb-0">
+                    <span class="header-icon">🔍</span>
+                    Start Network Scan
+                </h4>
             </div>
             <div class="card-body">
                 <form action="/scan" method="POST">
-                    <div class="mb-3">
-                        <label for="subnet" class="form-label">Subnet / IP Address</label>
-                        <input type="text" class="form-control" id="subnet" name="subnet" 
-                               placeholder="e.g., 192.168.1.0/24 or 127.0.0.1" required>
-                        <div class="form-text">Enter a subnet in CIDR notation or a single IP address</div>
+                    <div class="mb-4">
+                        <label for="subnet" class="form-label-modern">Network Subnet</label>
+                        <div class="input-group input-group-modern">
+                            <span class="input-group-text">🌐</span>
+                            <input type="text" class="form-control" id="subnet" name="subnet" 
+                                   value="{{ network_info.subnet }}" placeholder="e.g., 192.168.1.0/24" required>
+                        </div>
+                        <div class="form-text">
+                            <span class="badge bg-success">Auto-detected</span> 
+                            Network automatically detected from your connection. You can modify if needed.
+                        </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="intensity" class="form-label">Scan Intensity</label>
-                        <select class="form-select" id="intensity" name="intensity">
-                            <option value="Stealth">Stealth - Minimal noise, low footprint</option>
-                            <option value="Balanced" selected>Balanced - Moderate scan (recommended)</option>
-                            <option value="Aggressive">Aggressive - Fast and detailed scan</option>
-                            <option value="Insane">Insane - Maximum speed and depth</option>
+                    <div class="mb-4">
+                        <label for="intensity" class="form-label-modern">Scan Intensity</label>
+                        <div class="btn-group-modern" role="group">
+                            <input type="radio" class="btn-check" name="intensity" id="stealth" value="Stealth">
+                            <label class="btn btn-outline-primary" for="stealth">
+                                <div class="intensity-label">🐌 Stealth</div>
+                                <small>Low noise</small>
+                            </label>
+
+                            <input type="radio" class="btn-check" name="intensity" id="balanced" value="Balanced" checked>
+                            <label class="btn btn-outline-primary" for="balanced">
+                                <div class="intensity-label">⚖️ Balanced</div>
+                                <small>Recommended</small>
+                            </label>
+
+                            <input type="radio" class="btn-check" name="intensity" id="aggressive" value="Aggressive">
+                            <label class="btn btn-outline-primary" for="aggressive">
+                                <div class="intensity-label">🚀 Aggressive</div>
+                                <small>Fast & detailed</small>
+                            </label>
+
+                            <input type="radio" class="btn-check" name="intensity" id="insane" value="Insane">
+                            <label class="btn btn-outline-primary" for="insane">
+                                <div class="intensity-label">⚡ Insane</div>
+                                <small>Maximum depth</small>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="auth_mode" class="form-label-modern">Authentication Mode</label>
+                        <select class="form-select form-select-modern" id="auth_mode" name="auth_mode">
+                            <option value="Safe Scan" selected>🛡️ Safe Scan - Non-intrusive enumeration</option>
+                            <option value="Deep Scan" disabled>🔐 Deep Scan - Authenticated checks (Coming Soon)</option>
                         </select>
-                        <div class="form-text">Higher intensity provides more details but may stress the network</div>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="auth_mode" class="form-label">Authentication Mode</label>
-                        <select class="form-select" id="auth_mode" name="auth_mode">
-                            <option value="Safe Scan" selected>Safe Scan - Non-intrusive enumeration</option>
-                            <option value="Deep Scan" disabled>Deep Scan - Authenticated checks (Coming Soon)</option>
-                        </select>
-                        <div class="form-text">Safe Scan avoids login attempts and device crashes</div>
+                    <div class="alert alert-info-modern">
+                        <span class="alert-icon">ℹ️</span>
+                        <div>
+                            <strong>System Requirement:</strong> This application requires <code>nmap</code> to be installed.
+                            <br>
+                            <small>Install: <code>sudo apt-get install nmap</code> (Raspberry Pi/Linux) or <code>brew install nmap</code> (macOS)</small>
+                        </div>
                     </div>
 
-                    <div class="alert alert-warning">
-                        <strong>Note:</strong> This application requires <code>nmap</code> to be installed on your system. 
-                        On Raspberry Pi or Linux, install it with: <code>sudo apt-get install nmap</code>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary btn-lg">
-                        <span>🔍</span> Start Scan
+                    <button type="submit" class="btn btn-primary-modern btn-lg">
+                        <span class="btn-icon">🔍</span> Start Scan
                     </button>
                 </form>
             </div>
@@ -80,42 +134,36 @@
 
 <div class="row mt-4">
     <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Scan Intensity Modes</h5>
-            </div>
-            <div class="card-body">
-                <table class="table table-sm">
-                    <thead>
-                        <tr>
-                            <th>Mode</th>
-                            <th>Description</th>
-                            <th>Nmap Flags</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><span class="badge bg-success">Stealth</span></td>
-                            <td>Quick, low-noise scan that avoids firewall alerts</td>
-                            <td><code>-sS -T1 --top-ports 50</code></td>
-                        </tr>
-                        <tr>
-                            <td><span class="badge bg-primary">Balanced</span></td>
-                            <td>Default moderate scan (accurate + safe)</td>
-                            <td><code>-sS -sV -T3 --top-ports 100</code></td>
-                        </tr>
-                        <tr>
-                            <td><span class="badge bg-warning">Aggressive</span></td>
-                            <td>Fast and detailed scan with version detection</td>
-                            <td><code>-sS -sV -O -T4 -p-</code></td>
-                        </tr>
-                        <tr>
-                            <td><span class="badge bg-danger">Insane</span></td>
-                            <td>Maximum speed and depth; may stress network</td>
-                            <td><code>-A -T5 --script vuln -p-</code></td>
-                        </tr>
-                    </tbody>
-                </table>
+        <div class="quick-actions">
+            <h5 class="mb-3">Quick Actions</h5>
+            <div class="row">
+                <div class="col-md-4">
+                    <a href="/topology" class="action-card">
+                        <div class="action-icon">🗺️</div>
+                        <div class="action-content">
+                            <h6>Network Topology</h6>
+                            <p>View real-time network map</p>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-4">
+                    <a href="/reports" class="action-card">
+                        <div class="action-icon">📊</div>
+                        <div class="action-content">
+                            <h6>View Reports</h6>
+                            <p>Browse scan results</p>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-4">
+                    <a href="/export/csv" class="action-card">
+                        <div class="action-icon">📥</div>
+                        <div class="action-content">
+                            <h6>Export Data</h6>
+                            <p>Download CSV reports</p>
+                        </div>
+                    </a>
+                </div>
             </div>
         </div>
     </div>

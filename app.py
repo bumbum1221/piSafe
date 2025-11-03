@@ -1,9 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, send_file
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file, jsonify
 import database
 from active_scan.scanner import scan_network
 from active_scan.cve_lookup import lookup_cves_for_device
 from active_scan.risk_analyzer import calculate_risk_score, get_risk_level
 from reporting.export_report import export_to_csv, export_to_html
+from network_utils import get_local_network, get_all_interfaces
 import json
 import os
 import re
@@ -36,10 +37,12 @@ def validate_subnet(subnet):
 def home():
     device_count = database.get_device_count()
     high_risk_count = database.get_high_risk_count()
+    network_info = get_local_network()
     
     return render_template('home.html', 
                          device_count=device_count,
-                         high_risk_count=high_risk_count)
+                         high_risk_count=high_risk_count,
+                         network_info=network_info)
 
 @app.route('/scan', methods=['POST'])
 def scan():
@@ -142,6 +145,67 @@ def export_html():
     except Exception as e:
         flash(f'Error exporting HTML: {str(e)}', 'danger')
         return redirect(url_for('reports'))
+
+@app.route('/topology')
+def topology():
+    return render_template('topology.html')
+
+@app.route('/api/topology')
+def api_topology():
+    devices = database.get_all_devices()
+    network_info = get_local_network()
+    
+    nodes = []
+    edges = []
+    
+    gateway_ip = network_info.get('ip', '192.168.1.1')
+    nodes.append({
+        'id': 'gateway',
+        'label': f'Gateway\n{gateway_ip}',
+        'type': 'gateway',
+        'ip': gateway_ip,
+        'shape': 'diamond',
+        'color': '#4CAF50',
+        'size': 30
+    })
+    
+    for device in devices:
+        device_id = f"device_{device['id']}"
+        label = f"{device['ip']}\n{device['hostname'] or 'Unknown'}"
+        
+        color = '#28a745'
+        if device['risk_level'] == 'Critical':
+            color = '#dc3545'
+        elif device['risk_level'] == 'High':
+            color = '#fd7e14'
+        elif device['risk_level'] == 'Moderate':
+            color = '#ffc107'
+        
+        nodes.append({
+            'id': device_id,
+            'label': label,
+            'type': 'device',
+            'ip': device['ip'],
+            'mac': device['mac'],
+            'os': device['os'],
+            'risk_level': device['risk_level'],
+            'shape': 'dot',
+            'color': color,
+            'size': 20
+        })
+        
+        edges.append({
+            'from': 'gateway',
+            'to': device_id,
+            'color': '#999',
+            'width': 2
+        })
+    
+    return jsonify({
+        'nodes': nodes,
+        'edges': edges,
+        'network_info': network_info
+    })
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

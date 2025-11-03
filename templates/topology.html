@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Network Topology - PiSafe{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="topology-header">
+            <h1 class="display-5 mb-3">
+                <span class="hero-icon">🗺️</span> Network Topology
+            </h1>
+            <p class="lead text-muted">Real-time visualization of your network structure and devices</p>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-12">
+        <div class="alert alert-info-modern">
+            <span class="alert-icon">ℹ️</span>
+            <div>
+                <strong>Legend:</strong> 
+                <span class="badge bg-success ms-2">Low Risk</span>
+                <span class="badge bg-warning ms-1">Moderate</span>
+                <span class="badge bg-danger ms-1">High/Critical</span>
+                <span class="ms-3">💎 = Gateway | ⚫ = Device</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card topology-card">
+            <div class="card-body p-0">
+                <div id="network-topology" style="height: 600px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header-modern">
+                <h5 class="mb-0">Network Information</h5>
+            </div>
+            <div class="card-body" id="network-info">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+<script>
+    async function loadTopology() {
+        try {
+            const response = await fetch('/api/topology');
+            const data = await response.json();
+            
+            const container = document.getElementById('network-topology');
+            
+            const nodes = new vis.DataSet(data.nodes.map(node => ({
+                id: node.id,
+                label: node.label,
+                shape: node.shape,
+                color: {
+                    background: node.color,
+                    border: '#333',
+                    highlight: {
+                        background: node.color,
+                        border: '#000'
+                    }
+                },
+                size: node.size,
+                font: {
+                    color: '#ffffff',
+                    size: 14,
+                    face: 'Arial',
+                    background: 'rgba(0,0,0,0.5)',
+                    strokeWidth: 0
+                },
+                title: `${node.type === 'gateway' ? 'Gateway' : 'Device'}<br>IP: ${node.ip}${node.os ? '<br>OS: ' + node.os : ''}${node.risk_level ? '<br>Risk: ' + node.risk_level : ''}`
+            })));
+            
+            const edges = new vis.DataSet(data.edges.map(edge => ({
+                from: edge.from,
+                to: edge.to,
+                color: { color: edge.color, opacity: 0.6 },
+                width: edge.width,
+                smooth: {
+                    type: 'cubicBezier',
+                    roundness: 0.5
+                }
+            })));
+            
+            const networkData = {
+                nodes: nodes,
+                edges: edges
+            };
+            
+            const options = {
+                physics: {
+                    enabled: true,
+                    stabilization: {
+                        iterations: 100,
+                        updateInterval: 25
+                    },
+                    barnesHut: {
+                        gravitationalConstant: -2000,
+                        springConstant: 0.001,
+                        springLength: 200
+                    }
+                },
+                interaction: {
+                    hover: true,
+                    tooltipDelay: 100,
+                    zoomView: true,
+                    dragView: true
+                },
+                nodes: {
+                    borderWidth: 3,
+                    shadow: {
+                        enabled: true,
+                        color: 'rgba(0,0,0,0.3)',
+                        size: 10,
+                        x: 5,
+                        y: 5
+                    }
+                },
+                edges: {
+                    shadow: {
+                        enabled: true,
+                        color: 'rgba(0,0,0,0.2)',
+                        size: 5,
+                        x: 3,
+                        y: 3
+                    }
+                }
+            };
+            
+            const network = new vis.Network(container, networkData, options);
+            
+            network.on("click", function(params) {
+                if (params.nodes.length > 0) {
+                    const nodeId = params.nodes[0];
+                    const node = data.nodes.find(n => n.id === nodeId);
+                    if (node && node.type === 'device') {
+                        const deviceId = nodeId.replace('device_', '');
+                        window.location.href = `/device/${deviceId}`;
+                    }
+                }
+            });
+            
+            const networkInfo = document.getElementById('network-info');
+            networkInfo.innerHTML = `
+                <div class="row">
+                    <div class="col-md-3">
+                        <strong>Network Subnet:</strong><br>
+                        <span class="text-primary">${data.network_info.subnet}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Gateway IP:</strong><br>
+                        <span class="text-success">${data.network_info.ip}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Network Mask:</strong><br>
+                        <span class="text-info">${data.network_info.netmask}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Total Devices:</strong><br>
+                        <span class="text-warning">${data.nodes.length - 1}</span>
+                    </div>
+                </div>
+            `;
+            
+        } catch (error) {
+            console.error('Error loading topology:', error);
+            document.getElementById('network-topology').innerHTML = 
+                '<div class="alert alert-danger m-4">Error loading network topology. Please run a scan first.</div>';
+        }
+    }
+    
+    loadTopology();
+    
+    setInterval(loadTopology, 30000);
+</script>
+{% endblock %}

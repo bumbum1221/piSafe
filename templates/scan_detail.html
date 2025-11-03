@@ -3,58 +3,112 @@
 {% block title %}Device Details - PiSafe{% endblock %}
 
 {% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="topology-header">
+            <h1 class="display-5 mb-3">
+                <span class="hero-icon">🖥️</span> Device Details
+            </h1>
+            <p class="lead text-muted">{{ device.ip }}</p>
+        </div>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-md-12">
-        <h1 class="mb-4">Device Details</h1>
-        
         <div class="card mb-4">
-            <div class="card-header bg-dark text-white">
+            <div class="card-header-modern">
                 <h5 class="mb-0">Device Information</h5>
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-6">
-                        <p><strong>IP Address:</strong> {{ device.ip }}</p>
-                        <p><strong>MAC Address:</strong> {{ device.mac or 'N/A' }}</p>
-                        <p><strong>Hostname:</strong> {{ device.hostname or 'N/A' }}</p>
-                        <p><strong>Operating System:</strong> {{ device.os or 'Unknown' }}</p>
+                    <div class="col-md-6 mb-3">
+                        <div class="info-item">
+                            <strong>🌐 IP Address:</strong>
+                            <span class="ms-2 text-primary">{{ device.ip }}</span>
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                        <p><strong>Open Ports:</strong> {{ device.open_ports or 'None' }}</p>
-                        <p><strong>Scan Intensity:</strong> {{ device.intensity }}</p>
-                        <p><strong>Authentication Mode:</strong> {{ device.auth_mode }}</p>
-                        <p><strong>Scan Time:</strong> {{ device.scan_time }}</p>
+                    <div class="col-md-6 mb-3">
+                        <div class="info-item">
+                            <strong>📟 MAC Address:</strong>
+                            <code class="ms-2">{{ device.mac or 'N/A' }}</code>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="info-item">
+                            <strong>🏷️ Hostname:</strong>
+                            <span class="ms-2">{{ device.hostname or 'N/A' }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="info-item">
+                            <strong>💻 Operating System:</strong>
+                            <span class="ms-2">{{ device.os or 'Unknown' }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="info-item">
+                            <strong>🔌 Open Ports:</strong>
+                            <span class="ms-2">{{ device.open_ports or 'None' }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="info-item">
+                            <strong>🔍 Scan Intensity:</strong>
+                            <span class="badge bg-primary ms-2">{{ device.intensity }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="info-item">
+                            <strong>🔐 Authentication Mode:</strong>
+                            <span class="ms-2">{{ device.auth_mode }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="info-item">
+                            <strong>📅 Scan Time:</strong>
+                            <span class="ms-2">{{ device.scan_time }}</span>
+                        </div>
                     </div>
                 </div>
                 <div class="row mt-3">
                     <div class="col-md-12">
-                        <p>
-                            <strong>Risk Level:</strong> 
-                            {% if device.risk_level == 'Critical' %}
-                                <span class="badge bg-danger">Critical</span>
-                            {% elif device.risk_level == 'High' %}
-                                <span class="badge bg-warning">High</span>
-                            {% elif device.risk_level == 'Moderate' %}
-                                <span class="badge bg-info">Moderate</span>
-                            {% else %}
-                                <span class="badge bg-success">Low</span>
-                            {% endif %}
-                        </p>
-                        <p><strong>Risk Score:</strong> {{ "%.2f"|format(device.risk_score) }}</p>
+                        <div class="risk-summary p-3 rounded" style="background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);">
+                            <div class="d-flex align-items-center gap-3">
+                                <div>
+                                    <strong>Risk Assessment:</strong>
+                                </div>
+                                <div>
+                                    {% if device.risk_level == 'Critical' %}
+                                        <span class="badge bg-danger" style="font-size: 1rem;">⚠️ Critical Risk</span>
+                                    {% elif device.risk_level == 'High' %}
+                                        <span class="badge bg-warning text-dark" style="font-size: 1rem;">⚡ High Risk</span>
+                                    {% elif device.risk_level == 'Moderate' %}
+                                        <span class="badge bg-info" style="font-size: 1rem;">📊 Moderate Risk</span>
+                                    {% else %}
+                                        <span class="badge bg-success" style="font-size: 1rem;">✓ Low Risk</span>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <strong>Risk Score:</strong>
+                                    <span class="text-primary ms-2" style="font-size: 1.2rem;">{{ "%.2f"|format(device.risk_score) }}</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="card">
-            <div class="card-header bg-dark text-white">
-                <h5 class="mb-0">Vulnerabilities (CVEs)</h5>
+            <div class="card-header-modern">
+                <h5 class="mb-0">🛡️ Vulnerabilities (CVEs)</h5>
             </div>
             <div class="card-body">
                 {% if vulnerabilities %}
                 <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
+                    <table class="table table-hover">
+                        <thead class="table-dark">
                             <tr>
                                 <th>CVE ID</th>
                                 <th>Description</th>
@@ -66,8 +120,8 @@
                             {% for vuln in vulnerabilities %}
                             <tr>
                                 <td>
-                                    <a href="https://nvd.nist.gov/vuln/detail/{{ vuln.cve_id }}" target="_blank">
-                                        {{ vuln.cve_id }}
+                                    <a href="https://nvd.nist.gov/vuln/detail/{{ vuln.cve_id }}" target="_blank" class="text-decoration-none">
+                                        <strong>{{ vuln.cve_id }}</strong> 🔗
                                     </a>
                                 </td>
                                 <td>{{ vuln.description }}</td>
@@ -75,14 +129,14 @@
                                     {% if vuln.severity == 'CRITICAL' %}
                                         <span class="badge bg-danger">Critical</span>
                                     {% elif vuln.severity == 'HIGH' %}
-                                        <span class="badge bg-warning">High</span>
+                                        <span class="badge bg-warning text-dark">High</span>
                                     {% elif vuln.severity == 'MEDIUM' %}
                                         <span class="badge bg-info">Medium</span>
                                     {% else %}
                                         <span class="badge bg-secondary">{{ vuln.severity }}</span>
                                     {% endif %}
                                 </td>
-                                <td>{{ "%.1f"|format(vuln.score) }}</td>
+                                <td><strong>{{ "%.1f"|format(vuln.score) }}</strong></td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -90,14 +144,15 @@
                 </div>
                 {% else %}
                 <div class="alert alert-success">
-                    <strong>No vulnerabilities found</strong> for this device.
+                    <strong>✓ No vulnerabilities found</strong> for this device.
                 </div>
                 {% endif %}
             </div>
         </div>
 
         <div class="mt-3">
-            <a href="/reports" class="btn btn-secondary">Back to Reports</a>
+            <a href="/reports" class="btn btn-secondary">← Back to Reports</a>
+            <a href="/topology" class="btn btn-primary">🗺️ View in Topology</a>
         </div>
     </div>
 </div>
