@@ -120,6 +120,13 @@ Risk Levels:
 None specified yet.
 
 ## Recent Changes
+- 2025-11-03 (Update 4): Enhanced security and UI improvements:
+  - Changed "Start Network Scan" to "Explicit Scanning" in UI
+  - Converted scan intensity from radio buttons to dropdown menu for better UX
+  - Enhanced firmware analysis with NIST CVE API key integration for better rate limits
+  - Removed hardcoded Flask secret key fallback - SESSION_SECRET now required for security
+  - Created comprehensive Linux deployment guide (DEPLOYMENT_GUIDE.md)
+  - All sensitive credentials now properly secured via environment variables
 - 2025-11-03 (Update 3): Implemented Deep Scan with SSH/HTTP authentication, redesigned entire UI with cyberpunk/hacking theme (dark mode, cyber green/cyan colors, matrix effects), and made Quick Actions conditional (only shows after scan completion)
 - 2025-11-03 (Update 2): Added automatic network detection, real-time network topology visualization, removed intensity table, and completely redesigned UI with modern gradients and improved UX
 - 2025-11-03 (Initial): Phase 2 implementation with core scanning features
