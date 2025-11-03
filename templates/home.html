@@ -110,8 +110,9 @@
                         <label for="auth_mode" class="form-label-modern">Authentication Mode</label>
                         <select class="form-select form-select-modern" id="auth_mode" name="auth_mode">
                             <option value="Safe Scan" selected>🛡️ Safe Scan - Non-intrusive enumeration</option>
-                            <option value="Deep Scan" disabled>🔐 Deep Scan - Authenticated checks (Coming Soon)</option>
+                            <option value="Deep Scan">🔐 Deep Scan - Authenticated SSH/HTTP checks</option>
                         </select>
+                        <div class="form-text">Deep Scan uses SSH credentials to gather firmware and configuration details</div>
                     </div>
 
                     <div class="alert alert-info-modern">
@@ -132,10 +133,11 @@
     </div>
 </div>
 
+{% if device_count > 0 %}
 <div class="row mt-4">
     <div class="col-md-12">
         <div class="quick-actions">
-            <h5 class="mb-3">Quick Actions</h5>
+            <h5 class="mb-3"><span class="cyber-text">></span> Quick Actions</h5>
             <div class="row">
                 <div class="col-md-4">
                     <a href="/topology" class="action-card">
@@ -168,4 +170,5 @@
         </div>
     </div>
 </div>
+{% endif %}
 {% endblock %}

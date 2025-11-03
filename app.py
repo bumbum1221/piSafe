@@ -77,6 +77,10 @@ def scan():
             
             ports_str = ', '.join([f"{p['port']}/{p['service']}" for p in device['ports']])
             
+            deep_scan_info = None
+            if 'deep_scan_results' in device:
+                deep_scan_info = json.dumps(device['deep_scan_results'])
+            
             device_id = database.add_device(
                 ip=device['ip'],
                 mac=device['mac'],
@@ -86,7 +90,8 @@ def scan():
                 intensity=device['intensity'],
                 auth_mode=device['auth_mode'],
                 risk_level=risk_level,
-                risk_score=risk_score
+                risk_score=risk_score,
+                deep_scan_info=deep_scan_info
             )
             
             for cve in cves:

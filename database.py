@@ -20,9 +20,15 @@ def init_db():
             auth_mode TEXT,
             risk_level TEXT,
             risk_score REAL,
+            deep_scan_info TEXT,
             scan_time DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    
+    try:
+        cursor.execute('ALTER TABLE devices ADD COLUMN deep_scan_info TEXT')
+    except sqlite3.OperationalError:
+        pass
     
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS vulnerabilities (
@@ -39,14 +45,14 @@ def init_db():
     conn.commit()
     conn.close()
 
-def add_device(ip, mac, hostname, os, open_ports, intensity, auth_mode, risk_level, risk_score):
+def add_device(ip, mac, hostname, os, open_ports, intensity, auth_mode, risk_level, risk_score, deep_scan_info=None):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
     cursor.execute('''
-        INSERT INTO devices (ip, mac, hostname, os, open_ports, intensity, auth_mode, risk_level, risk_score)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (ip, mac, hostname, os, open_ports, intensity, auth_mode, risk_level, risk_score))
+        INSERT INTO devices (ip, mac, hostname, os, open_ports, intensity, auth_mode, risk_level, risk_score, deep_scan_info)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (ip, mac, hostname, os, open_ports, intensity, auth_mode, risk_level, risk_score, deep_scan_info))
     
     device_id = cursor.lastrowid
     conn.commit()

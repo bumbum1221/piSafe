@@ -100,6 +100,61 @@
             </div>
         </div>
 
+        {% if device.deep_scan_info %}
+        <div class="card mb-4">
+            <div class="card-header-modern">
+                <h5 class="mb-0">🔐 Deep Scan Results</h5>
+            </div>
+            <div class="card-body">
+                {% set deep_info = device.deep_scan_info | fromjson %}
+                
+                {% if deep_info.ssh_results and deep_info.ssh_results.ssh_accessible %}
+                <div class="alert alert-warning mb-3">
+                    <strong>⚠️ SSH Access Detected!</strong><br>
+                    <small>
+                        Credentials found: 
+                        <code>{{ deep_info.ssh_results.credentials_found.username }}</code> / 
+                        <code>{{ '*' * deep_info.ssh_results.credentials_found.password|length }}</code>
+                    </small>
+                </div>
+                
+                {% if deep_info.ssh_results.system_info %}
+                <div class="mb-3">
+                    <strong>System Information:</strong>
+                    <pre class="mt-2 p-3" style="background: rgba(0, 255, 65, 0.05); border: 1px solid var(--cyber-green); border-radius: 5px; color: var(--cyber-green);"><code>{{ deep_info.ssh_results.system_info }}</code></pre>
+                </div>
+                {% endif %}
+                
+                {% if deep_info.ssh_results.firmware_info %}
+                <div class="mb-3">
+                    <strong>Firmware/Version:</strong>
+                    <pre class="mt-2 p-3" style="background: rgba(0, 255, 65, 0.05); border: 1px solid var(--cyber-green); border-radius: 5px; color: var(--cyber-green);"><code>{{ deep_info.ssh_results.firmware_info }}</code></pre>
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="alert alert-info">
+                    <strong>ℹ️ No SSH access</strong> - Device does not accept common credentials.
+                </div>
+                {% endif %}
+                
+                {% if deep_info.http_results and deep_info.http_results.http_accessible %}
+                <div class="mb-3">
+                    <strong>HTTP Server Information:</strong>
+                    <ul class="mt-2">
+                        <li>Status Code: <span class="badge bg-success">{{ deep_info.http_results.status_code }}</span></li>
+                        {% if deep_info.http_results.server_header %}
+                        <li>Server: <code>{{ deep_info.http_results.server_header }}</code></li>
+                        {% endif %}
+                        {% if deep_info.http_results.page_title %}
+                        <li>Page Title: {{ deep_info.http_results.page_title }}</li>
+                        {% endif %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
         <div class="card">
             <div class="card-header-modern">
                 <h5 class="mb-0">🛡️ Vulnerabilities (CVEs)</h5>

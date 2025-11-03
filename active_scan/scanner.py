@@ -1,5 +1,6 @@
 import nmap
 import json
+from active_scan.deep_scan import perform_deep_scan
 
 INTENSITY_MODES = {
     'Stealth': '-sS -T1 --top-ports 50',
@@ -66,6 +67,17 @@ def scan_network(subnet, intensity='Balanced', auth_mode='Safe Scan'):
                     'product': product,
                     'state': port_info.get('state', 'unknown')
                 })
+        
+        if auth_mode == 'Deep Scan':
+            print(f"Performing deep scan on {host}...")
+            deep_info = perform_deep_scan(device_info)
+            device_info['deep_scan_results'] = deep_info
+            
+            if deep_info.get('ssh_results', {}).get('ssh_accessible'):
+                creds = deep_info['ssh_results'].get('credentials_found', {})
+                print(f"  [+] SSH access gained with {creds.get('username', 'N/A')}")
+                if deep_info['ssh_results'].get('system_info'):
+                    print(f"  [+] System info: {deep_info['ssh_results']['system_info'][:80]}...")
         
         devices.append(device_info)
     
