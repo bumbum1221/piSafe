@@ -4,7 +4,7 @@
 PiSafe is an IoT Security Gateway that performs active vulnerability scanning with multi-intensity Nmap integration, CVE detection via NVD API, and risk analysis. This is Phase 2 of the project focusing on Active Scanning & Reporting.
 
 ## Current State (Phase 2 - Active Scanning & Reporting)
-- **Status**: Initial implementation complete
+- **Status**: Enhanced with auto-detection and network topology
 - **Last Updated**: November 3, 2025
 
 ## Project Architecture
@@ -36,19 +36,24 @@ PiSafe/
 **vulnerabilities table**: Stores CVEs linked to devices
 
 ### Key Features Implemented
-1. **Multi-Intensity Scanning**: 4 modes (Stealth, Balanced, Aggressive, Insane)
-2. **Safe Scan Mode**: Non-intrusive enumeration
-3. **CVE Integration**: NVD API lookup with 7-day caching
-4. **Risk Scoring**: Formula-based risk calculation (CVSS + open ports + intensity weight)
-5. **Flask Dashboard**: Home, Reports, and Device Detail pages
-6. **Export Functionality**: CSV and HTML report generation
+1. **Automatic Network Detection**: Auto-detects WiFi/LAN network using netifaces library
+2. **Real-time Network Topology**: Interactive network diagram with vis.js showing device connections
+3. **Multi-Intensity Scanning**: 4 modes (Stealth, Balanced, Aggressive, Insane)
+4. **Safe Scan Mode**: Non-intrusive enumeration
+5. **CVE Integration**: NVD API lookup with 7-day caching
+6. **Risk Scoring**: Formula-based risk calculation (CVSS + open ports + intensity weight)
+7. **Modern UI**: Gradient designs, improved navigation, enhanced visual appeal
+8. **Flask Dashboard**: Home, Network Topology, Reports, and Device Detail pages
+9. **Export Functionality**: CSV and HTML report generation
 
 ### Dependencies
 - Flask: Web framework
 - python-nmap: Nmap integration
 - requests: NVD API calls
 - pandas: Data processing and CSV export
+- netifaces: Network interface detection
 - SQLite3: Database (built-in)
+- vis.js: Network topology visualization (CDN)
 
 ### System Requirements
 **IMPORTANT**: This application requires `nmap` to be installed on the system:
@@ -73,8 +78,10 @@ Risk Levels:
 - Insane: 1.0
 
 ## Routes
-- `/` - Home page with scan configuration form
+- `/` - Home page with scan configuration form and auto-detected network
 - `/scan` (POST) - Triggers network scan
+- `/topology` - Interactive network topology visualization
+- `/api/topology` - JSON API for topology data
 - `/reports` - View all scanned devices
 - `/device/<id>` - View device details with CVEs
 - `/export/csv` - Export scan results as CSV
@@ -97,4 +104,5 @@ Risk Levels:
 None specified yet.
 
 ## Recent Changes
-- 2025-11-03: Initial Phase 2 implementation with all core features
+- 2025-11-03 (Update 2): Added automatic network detection, real-time network topology visualization, removed intensity table, and completely redesigned UI with modern gradients and improved UX
+- 2025-11-03 (Initial): Phase 2 implementation with core scanning features
