@@ -59,7 +59,7 @@
             <div class="card-header-modern">
                 <h4 class="mb-0">
                     <span class="header-icon">🔍</span>
-                    Start Network Scan
+                    Explicit Scanning
                 </h4>
             </div>
             <div class="card-body">
@@ -79,31 +79,12 @@
 
                     <div class="mb-4">
                         <label for="intensity" class="form-label-modern">Scan Intensity</label>
-                        <div class="btn-group-modern" role="group">
-                            <input type="radio" class="btn-check" name="intensity" id="stealth" value="Stealth">
-                            <label class="btn btn-outline-primary" for="stealth">
-                                <div class="intensity-label">🐌 Stealth</div>
-                                <small>Low noise</small>
-                            </label>
-
-                            <input type="radio" class="btn-check" name="intensity" id="balanced" value="Balanced" checked>
-                            <label class="btn btn-outline-primary" for="balanced">
-                                <div class="intensity-label">⚖️ Balanced</div>
-                                <small>Recommended</small>
-                            </label>
-
-                            <input type="radio" class="btn-check" name="intensity" id="aggressive" value="Aggressive">
-                            <label class="btn btn-outline-primary" for="aggressive">
-                                <div class="intensity-label">🚀 Aggressive</div>
-                                <small>Fast & detailed</small>
-                            </label>
-
-                            <input type="radio" class="btn-check" name="intensity" id="insane" value="Insane">
-                            <label class="btn btn-outline-primary" for="insane">
-                                <div class="intensity-label">⚡ Insane</div>
-                                <small>Maximum depth</small>
-                            </label>
-                        </div>
+                        <select class="form-select form-select-modern" id="intensity" name="intensity">
+                            <option value="Stealth">🐌 Stealth - Low noise, minimal detection</option>
+                            <option value="Balanced" selected>⚖️ Balanced - Recommended for most scans</option>
+                            <option value="Aggressive">🚀 Aggressive - Fast & detailed scanning</option>
+                            <option value="Insane">⚡ Insane - Maximum depth, full coverage</option>
+                        </select>
                     </div>
 
                     <div class="mb-4">
