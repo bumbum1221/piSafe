@@ -34,20 +34,26 @@
         </div>
     </div>
     <div class="col-md-3">
-        <div class="stat-card bg-gradient-success">
+        <div class="stat-card {% if network_info.error %}bg-gradient-danger{% else %}bg-gradient-success{% endif %}">
             <div class="stat-icon">🌐</div>
             <div class="stat-content">
                 <h3>{{ network_info.ip }}</h3>
                 <p>Your IP Address</p>
+                {% if network_info.error %}
+                <small class="text-warning">⚠️ Auto-detection failed</small>
+                {% endif %}
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="stat-card bg-gradient-info">
+        <div class="stat-card {% if network_info.error %}bg-gradient-danger{% else %}bg-gradient-info{% endif %}">
             <div class="stat-icon">🔍</div>
             <div class="stat-content">
                 <h3>{{ network_info.subnet }}</h3>
                 <p>Detected Network</p>
+                {% if network_info.error %}
+                <small class="text-warning">⚠️ Please verify manually</small>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -97,7 +103,7 @@
                     </div>
 
                     <button type="submit" class="btn btn-primary-modern btn-lg">
-                        <span class="btn-icon">🔍</span> Start Scan
+                        <span class="btn-icon">🔍</span> Scan
                     </button>
                 </form>
             </div>

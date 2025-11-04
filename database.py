@@ -42,6 +42,23 @@ def init_db():
         )
     ''')
     
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS scan_progress (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            subnet TEXT NOT NULL,
+            intensity TEXT,
+            auth_mode TEXT,
+            status TEXT DEFAULT 'running',
+            progress INTEGER DEFAULT 0,
+            current_host TEXT,
+            total_hosts INTEGER DEFAULT 0,
+            found_devices INTEGER DEFAULT 0,
+            error_message TEXT,
+            start_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+            end_time DATETIME
+        )
+    ''')
+    
     conn.commit()
     conn.close()
 
@@ -124,3 +141,79 @@ def get_high_risk_count():
     
     conn.close()
     return count
+
+def create_scan_progress(subnet, intensity, auth_mode, total_hosts):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        INSERT INTO scan_progress (subnet, intensity, auth_mode, total_hosts, status, progress)
+        VALUES (?, ?, ?, ?, 'running', 0)
+    ''', (subnet, intensity, auth_mode, total_hosts))
+    
+    scan_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    
+    return scan_id
+
+def update_scan_progress(scan_id, progress, current_host=None, found_devices=None):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    updates = ['progress = ?']
+    params = [progress]
+    
+    if current_host is not None:
+        updates.append('current_host = ?')
+        params.append(current_host)
+    
+    if found_devices is not None:
+        updates.append('found_devices = ?')
+        params.append(found_devices)
+    
+    params.append(scan_id)
+    
+    cursor.execute(f'''
+        UPDATE scan_progress 
+        SET {', '.join(updates)}
+        WHERE id = ?
+    ''', params)
+    
+    conn.commit()
+    conn.close()
+
+def complete_scan_progress(scan_id, status='completed', error_message=None):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        UPDATE scan_progress 
+        SET status = ?, end_time = CURRENT_TIMESTAMP, error_message = ?, progress = 100
+        WHERE id = ?
+    ''', (status, error_message, scan_id))
+    
+    conn.commit()
+    conn.close()
+
+def get_scan_progress(scan_id):
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT * FROM scan_progress WHERE id = ?', (scan_id,))
+    scan = cursor.fetchone()
+    
+    conn.close()
+    return scan
+
+def get_latest_scan_progress():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT * FROM scan_progress ORDER BY start_time DESC LIMIT 1')
+    scan = cursor.fetchone()
+    
+    conn.close()
+    return scan

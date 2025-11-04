@@ -1,9 +1,25 @@
 import netifaces
 import socket
+import logging
+
+logger = logging.getLogger(__name__)
 
 def get_local_network():
+    default_fallback = {
+        'subnet': 'N/A',
+        'ip': 'N/A',
+        'netmask': 'N/A',
+        'interface': 'N/A',
+        'error': 'Could not detect network'
+    }
+    
     try:
         gateways = netifaces.gateways()
+        
+        if gateways is None:
+            logger.warning("netifaces.gateways() returned None")
+            raise RuntimeError("No gateways detected")
+        
         default_gateway = gateways.get('default', {}).get(netifaces.AF_INET)
         
         if default_gateway:
@@ -21,32 +37,34 @@ def get_local_network():
                         'subnet': subnet,
                         'ip': ip_address,
                         'netmask': netmask,
-                        'interface': interface
+                        'interface': interface,
+                        'error': None
                     }
         
+        logger.info("Attempting socket-based network detection")
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(2)
         s.connect(("8.8.8.8", 80))
         local_ip = s.getsockname()[0]
         s.close()
         
-        ip_parts = local_ip.split('.')
-        subnet = f"{ip_parts[0]}.{ip_parts[1]}.{ip_parts[2]}.0/24"
+        if local_ip:
+            ip_parts = local_ip.split('.')
+            subnet = f"{ip_parts[0]}.{ip_parts[1]}.{ip_parts[2]}.0/24"
+            
+            return {
+                'subnet': subnet,
+                'ip': local_ip,
+                'netmask': '255.255.255.0',
+                'interface': 'auto-detected',
+                'error': None
+            }
         
-        return {
-            'subnet': subnet,
-            'ip': local_ip,
-            'netmask': '255.255.255.0',
-            'interface': 'unknown'
-        }
+        raise RuntimeError("Socket detection failed")
     
     except Exception as e:
-        print(f"Error detecting network: {e}")
-        return {
-            'subnet': '192.168.1.0/24',
-            'ip': '192.168.1.1',
-            'netmask': '255.255.255.0',
-            'interface': 'unknown'
-        }
+        logger.error(f"Error detecting network: {e}")
+        return default_fallback
 
 def calculate_subnet(ip, netmask):
     ip_parts = [int(p) for p in ip.split('.')]

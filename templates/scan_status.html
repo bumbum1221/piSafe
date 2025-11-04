@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Scan in Progress - PiSafe{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="scan-card">
+            <div class="card-header-modern">
+                <h4 class="mb-0">
+                    <span class="header-icon">🔍</span>
+                    Scan in Progress
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <h5>Scanning: <span id="subnet-text">{{ scan['subnet'] }}</span></h5>
+                    <p class="text-muted">
+                        Intensity: <strong>{{ scan['intensity'] }}</strong> | 
+                        Mode: <strong>{{ scan['auth_mode'] }}</strong>
+                    </p>
+                </div>
+
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span id="status-text">Status: Initializing...</span>
+                        <span id="progress-percent">0%</span>
+                    </div>
+                    <div class="progress" style="height: 30px;">
+                        <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" 
+                             role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                            0%
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Current Host:</strong> <span id="current-host">-</span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Devices Found:</strong> <span id="found-devices">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="complete-section" class="d-none mt-4">
+                    <div id="success-message" class="alert alert-success d-none">
+                        <h5>✅ Scan Completed!</h5>
+                        <p id="complete-text"></p>
+                        <a href="/reports" class="btn btn-primary-modern mt-2">View Results</a>
+                    </div>
+                    <div id="error-message" class="alert alert-danger d-none">
+                        <h5>❌ Scan Failed</h5>
+                        <p id="error-text"></p>
+                        <p id="error-details" class="mt-2 small text-muted"></p>
+                        <a href="/" class="btn btn-primary-modern mt-2">Back to Home</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const scanId = {{ scan_id }};
+const progressBar = document.getElementById('progress-bar');
+const progressPercent = document.getElementById('progress-percent');
+const statusText = document.getElementById('status-text');
+const currentHost = document.getElementById('current-host');
+const foundDevices = document.getElementById('found-devices');
+const completeSection = document.getElementById('complete-section');
+const successMessage = document.getElementById('success-message');
+const errorMessage = document.getElementById('error-message');
+const completeText = document.getElementById('complete-text');
+const errorText = document.getElementById('error-text');
+
+const eventSource = new EventSource(`/scan/progress/${scanId}`);
+
+eventSource.onmessage = function(event) {
+    const data = JSON.parse(event.data);
+    
+    if (data.error) {
+        statusText.textContent = 'Error: ' + data.error;
+        eventSource.close();
+        return;
+    }
+    
+    const progress = data.progress || 0;
+    progressBar.style.width = progress + '%';
+    progressBar.textContent = progress + '%';
+    progressBar.setAttribute('aria-valuenow', progress);
+    progressPercent.textContent = progress + '%';
+    
+    if (data.current_host) {
+        currentHost.textContent = data.current_host;
+    }
+    
+    foundDevices.textContent = data.found_devices || 0;
+    
+    if (data.status === 'running') {
+        statusText.textContent = 'Status: Scanning...';
+    } else if (data.status === 'completed') {
+        statusText.textContent = 'Status: Completed';
+        progressBar.classList.remove('progress-bar-animated');
+        completeSection.classList.remove('d-none');
+        successMessage.classList.remove('d-none');
+        completeText.textContent = `Successfully scanned and found ${data.found_devices} device(s).`;
+        eventSource.close();
+    } else if (data.status === 'failed') {
+        statusText.textContent = 'Status: Failed';
+        progressBar.classList.remove('bg-success');
+        progressBar.classList.add('bg-danger');
+        progressBar.classList.remove('progress-bar-animated');
+        completeSection.classList.remove('d-none');
+        errorMessage.classList.remove('d-none');
+        errorText.textContent = 'The scan encountered an error. Please try again.';
+        if (data.error_message) {
+            document.getElementById('error-details').textContent = 'Error details: ' + data.error_message;
+        }
+        eventSource.close();
+    }
+};
+
+eventSource.onerror = function(error) {
+    console.error('EventSource error:', error);
+    statusText.textContent = 'Connection lost. Refreshing...';
+    setTimeout(() => location.reload(), 3000);
+};
+</script>
+{% endblock %}

@@ -1,18 +1,25 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, send_file, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file, jsonify, Response, stream_with_context
 import database
 from active_scan.scanner import scan_network
 from active_scan.cve_lookup import lookup_cves_for_device
 from active_scan.risk_analyzer import calculate_risk_score, get_risk_level
 from reporting.export_report import export_to_csv, export_to_html
 from network_utils import get_local_network, get_all_interfaces
+import background_scanner
 import json
 import os
 import re
+import logging
+import time
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SESSION_SECRET')
 if not app.secret_key:
-    raise RuntimeError("SESSION_SECRET environment variable must be set")
+    logger.critical("SESSION_SECRET environment variable must be set for security!")
+    raise RuntimeError("SESSION_SECRET environment variable must be set. Generate one with: python -c 'import secrets; print(secrets.token_hex(32))'")
 
 database.init_db()
 
@@ -37,14 +44,25 @@ def validate_subnet(subnet):
 
 @app.route('/')
 def home():
-    device_count = database.get_device_count()
-    high_risk_count = database.get_high_risk_count()
-    network_info = get_local_network()
-    
-    return render_template('home.html', 
-                         device_count=device_count,
-                         high_risk_count=high_risk_count,
-                         network_info=network_info)
+    try:
+        device_count = database.get_device_count()
+        high_risk_count = database.get_high_risk_count()
+        network_info = get_local_network()
+        
+        if network_info.get('error'):
+            flash(f'Network auto-detection issue: {network_info["error"]}. Please verify the subnet manually.', 'warning')
+        
+        return render_template('home.html', 
+                             device_count=device_count,
+                             high_risk_count=high_risk_count,
+                             network_info=network_info)
+    except Exception as e:
+        logger.error(f'Error in home route: {e}', exc_info=True)
+        flash('An error occurred loading the page. Please try again.', 'danger')
+        return render_template('home.html', 
+                             device_count=0,
+                             high_risk_count=0,
+                             network_info={'subnet': 'N/A', 'ip': 'N/A', 'netmask': 'N/A', 'interface': 'N/A', 'error': str(e)})
 
 @app.route('/scan', methods=['POST'])
 def scan():
@@ -69,47 +87,49 @@ def scan():
         return redirect(url_for('home'))
     
     try:
-        devices = scan_network(subnet, intensity, auth_mode)
-        
-        for device in devices:
-            cves = lookup_cves_for_device(device)
-            
-            risk_score = calculate_risk_score(device, cves)
-            risk_level = get_risk_level(risk_score)
-            
-            ports_str = ', '.join([f"{p['port']}/{p['service']}" for p in device['ports']])
-            
-            deep_scan_info = None
-            if 'deep_scan_results' in device:
-                deep_scan_info = json.dumps(device['deep_scan_results'])
-            
-            device_id = database.add_device(
-                ip=device['ip'],
-                mac=device['mac'],
-                hostname=device['hostname'],
-                os=device['os'],
-                open_ports=ports_str,
-                intensity=device['intensity'],
-                auth_mode=device['auth_mode'],
-                risk_level=risk_level,
-                risk_score=risk_score,
-                deep_scan_info=deep_scan_info
-            )
-            
-            for cve in cves:
-                database.add_vulnerability(
-                    device_id=device_id,
-                    cve_id=cve['cve_id'],
-                    description=cve['description'],
-                    severity=cve['severity'],
-                    score=cve['score']
-                )
-        
-        flash(f'Scan completed! Found {len(devices)} device(s).', 'success')
+        scan_id = background_scanner.start_scan(subnet, intensity, auth_mode)
+        flash(f'Scan started successfully! Tracking ID: {scan_id}', 'info')
+        return redirect(url_for('scan_status', scan_id=scan_id))
     except Exception as e:
-        flash(f'Error during scan: {str(e)}', 'danger')
+        logger.error(f'Error starting scan: {e}', exc_info=True)
+        flash(f'Error starting scan: {str(e)}', 'danger')
+        return redirect(url_for('home'))
+
+@app.route('/scan/status/<int:scan_id>')
+def scan_status(scan_id):
+    scan = database.get_scan_progress(scan_id)
+    if not scan:
+        flash('Scan not found', 'danger')
+        return redirect(url_for('home'))
     
-    return redirect(url_for('reports'))
+    return render_template('scan_status.html', scan=scan, scan_id=scan_id)
+
+@app.route('/scan/progress/<int:scan_id>')
+def scan_progress(scan_id):
+    def generate():
+        while True:
+            scan = database.get_scan_progress(scan_id)
+            if not scan:
+                yield f"data: {json.dumps({'error': 'Scan not found'})}\n\n"
+                break
+            
+            data = {
+                'progress': scan['progress'],
+                'status': scan['status'],
+                'current_host': scan['current_host'] or '',
+                'found_devices': scan['found_devices'],
+                'total_hosts': scan['total_hosts'],
+                'error_message': scan['error_message'] or ''
+            }
+            
+            yield f"data: {json.dumps(data)}\n\n"
+            
+            if scan['status'] in ['completed', 'failed']:
+                break
+            
+            time.sleep(0.5)
+    
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')
 
 @app.route('/reports')
 def reports():
@@ -159,60 +179,72 @@ def topology():
 
 @app.route('/api/topology')
 def api_topology():
-    devices = database.get_all_devices()
-    network_info = get_local_network()
-    
-    nodes = []
-    edges = []
-    
-    gateway_ip = network_info.get('ip', '192.168.1.1')
-    nodes.append({
-        'id': 'gateway',
-        'label': f'Gateway\n{gateway_ip}',
-        'type': 'gateway',
-        'ip': gateway_ip,
-        'shape': 'diamond',
-        'color': '#4CAF50',
-        'size': 30
-    })
-    
-    for device in devices:
-        device_id = f"device_{device['id']}"
-        label = f"{device['ip']}\n{device['hostname'] or 'Unknown'}"
+    try:
+        devices = database.get_all_devices()
+        network_info = get_local_network()
         
-        color = '#28a745'
-        if device['risk_level'] == 'Critical':
-            color = '#dc3545'
-        elif device['risk_level'] == 'High':
-            color = '#fd7e14'
-        elif device['risk_level'] == 'Moderate':
-            color = '#ffc107'
+        nodes = []
+        edges = []
+        
+        gateway_ip = network_info.get('ip', 'Unknown')
+        if gateway_ip == 'N/A' or not gateway_ip:
+            gateway_ip = 'Gateway'
         
         nodes.append({
-            'id': device_id,
-            'label': label,
-            'type': 'device',
-            'ip': device['ip'],
-            'mac': device['mac'],
-            'os': device['os'],
-            'risk_level': device['risk_level'],
-            'shape': 'dot',
-            'color': color,
-            'size': 20
+            'id': 'gateway',
+            'label': f'Gateway\n{gateway_ip}',
+            'type': 'gateway',
+            'ip': gateway_ip,
+            'shape': 'diamond',
+            'color': '#4CAF50',
+            'size': 30
         })
         
-        edges.append({
-            'from': 'gateway',
-            'to': device_id,
-            'color': '#999',
-            'width': 2
+        for device in devices:
+            device_id = f"device_{device['id']}"
+            label = f"{device['ip']}\n{device['hostname'] or 'Unknown'}"
+            
+            color = '#28a745'
+            if device['risk_level'] == 'Critical':
+                color = '#dc3545'
+            elif device['risk_level'] == 'High':
+                color = '#fd7e14'
+            elif device['risk_level'] == 'Moderate':
+                color = '#ffc107'
+            
+            nodes.append({
+                'id': device_id,
+                'label': label,
+                'type': 'device',
+                'ip': device['ip'],
+                'mac': device['mac'],
+                'os': device['os'],
+                'risk_level': device['risk_level'],
+                'shape': 'dot',
+                'color': color,
+                'size': 20
+            })
+            
+            edges.append({
+                'from': 'gateway',
+                'to': device_id,
+                'color': '#999',
+                'width': 2
+            })
+        
+        return jsonify({
+            'nodes': nodes,
+            'edges': edges,
+            'network_info': network_info
         })
-    
-    return jsonify({
-        'nodes': nodes,
-        'edges': edges,
-        'network_info': network_info
-    })
+    except Exception as e:
+        logger.error(f'Error in topology API: {e}', exc_info=True)
+        return jsonify({
+            'error': 'Failed to generate topology',
+            'message': str(e),
+            'nodes': [],
+            'edges': []
+        }), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
