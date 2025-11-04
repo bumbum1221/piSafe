@@ -16,15 +16,15 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Start Flask App"
+args = "Flask App"
 
 [[workflows.workflow]]
-name = "Start Flask App"
+name = "Flask App"
 author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "uv run python app.py"
+args = "uv run python main.py"
 waitForPort = 5000
 
 [workflows.workflow.metadata]
@@ -35,7 +35,7 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 41345
+localPort = 45343
 externalPort = 3000
 
 [deployment]
